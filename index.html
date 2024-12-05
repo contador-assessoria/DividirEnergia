@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Rateio de Energia Elétrica</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #f2f2f2;
+            --accent-color: #ff9800;
+            --text-color: #333;
+            --error-color: #e74c3c;
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--secondary-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 90%;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        input[type="number"] {
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            color: #fff;
+            transition: background-color 0.3s ease;
+        }
+
+        button#calculateBtn {
+            background-color: var(--primary-color);
+        }
+
+        button#calculateBtn:hover {
+            background-color: #45a049;
+        }
+
+        button#clearBtn {
+            background-color: var(--error-color);
+        }
+
+        button#clearBtn:hover {
+            background-color: #c0392b;
+        }
+
+        /* Botão de Configuração */
+        button#configBtn {
+            background-color: var(--accent-color);
+            margin-top: 1rem;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button#configBtn:hover {
+            background-color: #e68900;
+        }
+
+        /* Seção de Configuração Oculta */
+        .config-section {
+            background-color: var(--secondary-color);
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            display: none; /* Oculta inicialmente */
+        }
+
+        .config-section h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        .config-buttons {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1rem;
+        }
+
+        .config-buttons button {
+            background-color: var(--primary-color);
+            margin-left: 0.5rem;
+        }
+
+        .config-buttons button:hover {
+            background-color: #45a049;
+        }
+
+        /* Resultado */
+        .result {
+            background-color: var(--secondary-color);
+            padding: 1rem;
+            border-radius: 4px;
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .result h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        .error {
+            color: var(--error-color);
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--secondary-color);
+        }
+
+        @media (max-width: 600px) {
+            .buttons, .config-buttons {
+                flex-direction: column;
+            }
+
+            .buttons button, .config-buttons button {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+
+            .buttons button:last-child, .config-buttons button:last-child {
+                margin-bottom: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calculadora de Rateio de Energia</h1>
+        <div class="error" id="errorMsg"></div>
+        <form id="rateioForm">
+            <label for="consumoTotal">Consumo Total (kWh):</label>
+            <input type="number" id="consumoTotal" name="consumoTotal" min="0" step="any" required placeholder="Ex: 741">
+
+            <label for="energiaInjetada">Energia Injetada na Rede (kWh):</label>
+            <input type="number" id="energiaInjetada" name="energiaInjetada" min="0" step="any" required placeholder="Ex: 193">
+
+            <label for="consumoIndividual">Consumo Individual do Vizinho (kWh):</label>
+            <input type="number" id="consumoIndividual" name="consumoIndividual" min="0" step="any" required placeholder="Ex: 138.1">
+
+            <label for="valorTotal">Valor Total da Conta (R$):</label>
+            <input type="number" id="valorTotal" name="valorTotal" min="0" step="0.01" required placeholder="Ex: 517.40">
+
+            <div class="buttons">
+                <button type="button" id="calculateBtn">Calcular</button>
+                <button type="button" id="clearBtn">Limpar</button>
+            </div>
+        </form>
+
+        <!-- Botão de Configuração -->
+        <button type="button" id="configBtn">⚙️ Configurações</button>
+
+        <!-- Seção de Configuração Oculta -->
+        <div class="config-section" id="configSection">
+            <h3>Configurações de Tarifas</h3>
+            <form id="configForm">
+                <label for="tarifaTE">Tarifa TE (R$/kWh):</label>
+                <input type="number" id="tarifaTE" name="tarifaTE" min="0" step="any" required placeholder="Ex: 0.372942" value="0.372942">
+
+                <label for="tarifaTUSD">Tarifa TUSD (R$/kWh):</label>
+                <input type="number" id="tarifaTUSD" name="tarifaTUSD" min="0" step="any" required placeholder="Ex: 0.389528" value="0.389528">
+
+                <label for="bandeiraAmarela">Bandeira Amarela (R$/kWh):</label>
+                <input type="number" id="bandeiraAmarela" name="bandeiraAmarela" min="0" step="any" placeholder="Ex: 0.006977" value="0.006977">
+
+                <label for="bandeiraVermelha">Bandeira Vermelha (R$/kWh):</label>
+                <input type="number" id="bandeiraVermelha" name="bandeiraVermelha" min="0" step="any" placeholder="Ex: 0.068043" value="0.068043">
+
+                <div class="config-buttons">
+                    <button type="button" id="saveConfigBtn">Salvar</button>
+                    <button type="button" id="cancelConfigBtn">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="result" id="result">
+            <h2>Resultado</h2>
+            <p><strong>Valor a ser pago pelo vizinho:</strong> R$ <span id="valorVizinho">0,00</span></p>
+            <h3>Resumo do Cálculo:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Componente</th>
+                        <th>Valor (R$/kWh)</th>
+                        <th>Valor Total (R$)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Tarifa TE</td>
+                        <td>0,372942</td>
+                        <td>R$ <span id="teTotal">0,00</span></td>
+                    </tr>
+                    <tr>
+                        <td>Tarifa TUSD</td>
+                        <td>0,389528</td>
+                        <td>R$ <span id="tusdTotal">0,00</span></td>
+                    </tr>
+                    <tr>
+                        <td>Bandeira Amarela</td>
+                        <td>0,006977</td>
+                        <td>R$ <span id="bandeiraAmarelaTotal">0,00</span></td>
+                    </tr>
+                    <tr>
+                        <td>Bandeira Vermelha</td>
+                        <td>0,068043</td>
+                        <td>R$ <span id="bandeiraVermelhaTotal">0,00</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total antes dos Impostos</strong></td>
+                        <td></td>
+                        <td><strong>R$ <span id="totalAntesImpostos">0,00</span></strong></td>
+                    </tr>
+                    <tr>
+                        <td>ICMS (17%)</td>
+                        <td></td>
+                        <td>R$ <span id="icms">0,00</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total a Pagar</strong></td>
+                        <td></td>
+                        <td><strong>R$ <span id="totalPagar">0,00</span></strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Função para formatar números para moeda brasileira
+        function formatarMoeda(valor) {
+            return valor.toFixed(2).replace('.', ',');
+        }
+
+        // Elementos de configuração
+        const configBtn = document.getElementById('configBtn');
+        const configSection = document.getElementById('configSection');
+        const saveConfigBtn = document.getElementById('saveConfigBtn');
+        const cancelConfigBtn = document.getElementById('cancelConfigBtn');
+
+        // Botão para alternar a visibilidade da seção de configuração
+        configBtn.addEventListener('click', function() {
+            if (configSection.style.display === 'none' || configSection.style.display === '') {
+                configSection.style.display = 'block';
+            } else {
+                configSection.style.display = 'none';
+            }
+        });
+
+        // Botão para salvar as configurações
+        saveConfigBtn.addEventListener('click', function() {
+            const tarifaTE = parseFloat(document.getElementById('tarifaTE').value);
+            const tarifaTUSD = parseFloat(document.getElementById('tarifaTUSD').value);
+            const bandeiraAmarela = parseFloat(document.getElementById('bandeiraAmarela').value) || 0;
+            const bandeiraVermelha = parseFloat(document.getElementById('bandeiraVermelha').value) || 0;
+
+            // Validação das tarifas
+            if (isNaN(tarifaTE) || isNaN(tarifaTUSD) || isNaN(bandeiraAmarela) || isNaN(bandeiraVermelha)) {
+                mostrarErro('Por favor, preencha todas as tarifas com valores numéricos válidos.');
+                return;
+            }
+
+            if (tarifaTE < 0 || tarifaTUSD < 0 || bandeiraAmarela < 0 || bandeiraVermelha < 0) {
+                mostrarErro('As tarifas devem ser números positivos.');
+                return;
+            }
+
+            // Atualizar as tarifas no script
+            window.TARIFA_TE = tarifaTE;
+            window.TARIFA_TUSD = tarifaTUSD;
+            window.BANDEIRA_AMARELA = bandeiraAmarela;
+            window.BANDEIRA_VERMELHA = bandeiraVermelha;
+
+            // Atualizar a tabela de resultados se já estiver visível
+            if (document.getElementById('result').style.display === 'block') {
+                calcularRateio();
+            }
+
+            // Ocultar a seção de configuração
+            configSection.style.display = 'none';
+            // Ocultar mensagens de erro
+            document.getElementById('errorMsg').style.display = 'none';
+        });
+
+        // Botão para cancelar as configurações
+        cancelConfigBtn.addEventListener('click', function() {
+            // Recarregar os valores originais (ou poderia salvar temporariamente antes de edição)
+            document.getElementById('configForm').reset();
+            // Restaurar os valores atuais
+            document.getElementById('tarifaTE').value = window.TARIFA_TE.toFixed(6);
+            document.getElementById('tarifaTUSD').value = window.TARIFA_TUSD.toFixed(6);
+            document.getElementById('bandeiraAmarela').value = window.BANDEIRA_AMARELA.toFixed(6);
+            document.getElementById('bandeiraVermelha').value = window.BANDEIRA_VERMELHA.toFixed(6);
+            // Ocultar a seção de configuração
+            configSection.style.display = 'none';
+            // Ocultar mensagens de erro
+            document.getElementById('errorMsg').style.display = 'none';
+        });
+
+        // Inicialização das tarifas
+        window.TARIFA_TE = 0.372942; // R$/kWh
+        window.TARIFA_TUSD = 0.389528; // R$/kWh
+        window.BANDEIRA_AMARELA = 0.006977; // R$/kWh
+        window.BANDEIRA_VERMELHA = 0.068043; // R$/kWh
+
+        // Impostos
+        const ICMS_ALIQUOTA = 0.17; // 17%
+
+        // Evento de clique no botão "Calcular"
+        document.getElementById('calculateBtn').addEventListener('click', function() {
+            calcularRateio();
+        });
+
+        // Evento de clique no botão "Limpar"
+        document.getElementById('clearBtn').addEventListener('click', function() {
+            document.getElementById('rateioForm').reset();
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('errorMsg').style.display = 'none';
+        });
+
+        // Função para calcular o rateio
+        function calcularRateio() {
+            // Ocultar resultados anteriores e mensagens de erro
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('errorMsg').style.display = 'none';
+
+            // Obter valores dos campos
+            const consumoTotal = parseFloat(document.getElementById('consumoTotal').value);
+            const energiaInjetada = parseFloat(document.getElementById('energiaInjetada').value);
+            const consumoIndividual = parseFloat(document.getElementById('consumoIndividual').value);
+            const valorTotal = parseFloat(document.getElementById('valorTotal').value);
+
+            // Validação
+            if (isNaN(consumoTotal) || isNaN(energiaInjetada) || isNaN(consumoIndividual) || isNaN(valorTotal)) {
+                mostrarErro('Por favor, preencha todos os campos com valores numéricos válidos.');
+                return;
+            }
+
+            if (consumoTotal < 0 || energiaInjetada < 0 || consumoIndividual < 0 || valorTotal < 0) {
+                mostrarErro('Os valores devem ser números positivos.');
+                return;
+            }
+
+            if (energiaInjetada > consumoTotal) {
+                mostrarErro('A energia injetada não pode ser maior que o consumo total.');
+                return;
+            }
+
+            // Cálculos
+            const consumoLiquido = consumoTotal - energiaInjetada;
+
+            // Valor da energia injetada
+            const valorInjetada = energiaInjetada * (window.TARIFA_TE + window.TARIFA_TUSD);
+
+            // Consumo individual * tarifas
+            const teTotal = parseFloat((consumoIndividual * window.TARIFA_TE).toFixed(2));
+            const tusdTotal = parseFloat((consumoIndividual * window.TARIFA_TUSD).toFixed(2));
+
+            // Bandeiras (considerar se > 0)
+            const bandeiraAmarelaTotal = window.BANDEIRA_AMARELA > 0 ? parseFloat((consumoIndividual * window.BANDEIRA_AMARELA).toFixed(2)) : 0;
+            const bandeiraVermelhaTotal = window.BANDEIRA_VERMELHA > 0 ? parseFloat((consumoIndividual * window.BANDEIRA_VERMELHA).toFixed(2)) : 0;
+
+            // Total antes dos impostos
+            const totalAntesImpostos = parseFloat((teTotal + tusdTotal + bandeiraAmarelaTotal + bandeiraVermelhaTotal).toFixed(2));
+
+            // ICMS
+            const icms = parseFloat((totalAntesImpostos * ICMS_ALIQUOTA).toFixed(2));
+
+            // Total a pagar
+            const totalPagar = parseFloat((totalAntesImpostos + icms).toFixed(2));
+
+            // Atualizar resultados na página
+            document.getElementById('valorVizinho').innerText = formatarMoeda(totalPagar);
+            document.getElementById('teTotal').innerText = formatarMoeda(teTotal);
+            document.getElementById('tusdTotal').innerText = formatarMoeda(tusdTotal);
+            document.getElementById('bandeiraAmarelaTotal').innerText = bandeiraAmarelaTotal > 0 ? formatarMoeda(bandeiraAmarelaTotal) : '0,00';
+            document.getElementById('bandeiraVermelhaTotal').innerText = bandeiraVermelhaTotal > 0 ? formatarMoeda(bandeiraVermelhaTotal) : '0,00';
+            document.getElementById('totalAntesImpostos').innerText = formatarMoeda(totalAntesImpostos);
+            document.getElementById('icms').innerText = formatarMoeda(icms);
+            document.getElementById('totalPagar').innerText = formatarMoeda(totalPagar);
+
+            // Atualizar a tabela de componentes tarifários
+            atualizarTabelaComponentes();
+
+            // Mostrar resultados
+            document.getElementById('result').style.display = 'block';
+        }
+
+        // Função para atualizar a tabela de componentes tarifários
+        function atualizarTabelaComponentes() {
+            document.querySelector('table tbody tr:nth-child(1) td:nth-child(2)').innerText = window.TARIFA_TE.toFixed(6);
+            document.querySelector('table tbody tr:nth-child(2) td:nth-child(2)').innerText = window.TARIFA_TUSD.toFixed(6);
+            document.querySelector('table tbody tr:nth-child(3) td:nth-child(2)').innerText = window.BANDEIRA_AMARELA > 0 ? window.BANDEIRA_AMARELA.toFixed(6) : '0,000000';
+            document.querySelector('table tbody tr:nth-child(4) td:nth-child(2)').innerText = window.BANDEIRA_VERMELHA > 0 ? window.BANDEIRA_VERMELHA.toFixed(6) : '0,000000';
+        }
+
+        // Função para mostrar mensagens de erro
+        function mostrarErro(mensagem) {
+            const errorDiv = document.getElementById('errorMsg');
+            errorDiv.innerText = mensagem;
+            errorDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
